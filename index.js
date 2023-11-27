@@ -4,7 +4,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 // const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.yiwkd5s.mongodb.net/?retryWrites=true&w=majority`;
@@ -119,13 +119,49 @@ async function run() {
       app.get("/contest", async (req, res) => {
         const result = await contestCollection.find().toArray();
         res.send(result);
-      });    
+      });
+      app.get('/contest/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) }
+        const result = await contestCollection.findOne(query);
+        res.send(result);
+      })    
     // Sending new contest to the database, add (verifyToken, verifyAdmin,) later
         app.post('/contest',  async (req, res) => {
           const item = req.body;
           const result = await contestCollection.insertOne(item);
           res.send(result);
         });
+    // Update contest items to database
+    app.patch('/contest/:id', async (req, res) => {
+      const item = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) }
+      const updatedDoc = {
+        $set: {
+          name: item.name,
+          category: item.category,
+          fee:item.fee,
+          prize: item.prize,
+          deadline: item.deadline,
+          details:item.details,
+          instruction:item.instruction,
+          image: item.image
+        }
+      }
+
+      const result = await contestCollection.updateOne(filter, updatedDoc)
+      res.send(result);
+    })
+    // Delete contest Items, add (verifyToken, verifyAdmin,) later
+    app.delete('/contest/:id', async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await contestCollection.deleteOne(query);
+      res.send(result) 
+    })
+
+    //-------------------------
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
