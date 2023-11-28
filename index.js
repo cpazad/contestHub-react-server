@@ -64,11 +64,22 @@ async function run() {
       }
       next();
     };
+    // use verify admin after verifyToken
+    const verifyCreator = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isCreator = user?.role === "creator";
+      if (!isCreator) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
 
     // Update user role endpoint verifyToken,
-    app.put("/users/updateRole/:email",  async (req, res) => {
+    app.put("/users/updateRole/:email", async (req, res) => {
       const { email } = req.params;
-      const { newRole } = req.body; // Assuming you pass the new role in the request body
+      const { newRole } = req.body; //  pass the new role in the request body
 
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: "Forbidden access" });
@@ -97,11 +108,12 @@ async function run() {
     });
 
     //users Collection
+    // geting the all user collection
     app.get("/users", async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
-    // sending user data to database
+    // sending user data to database from registration form
     app.post("/users", async (req, res) => {
       const user = req.body;
       //insert email if user does not exist
@@ -115,51 +127,52 @@ async function run() {
     });
 
     // --------------Contest Collection----------
-      // Getting the contest list
-      app.get("/contest", async (req, res) => {
-        const result = await contestCollection.find().toArray();
-        res.send(result);
-      });
-      app.get('/contest/:id', async (req, res) => {
-        const id = req.params.id;
-        const query = { _id: new ObjectId(id) }
-        const result = await contestCollection.findOne(query);
-        res.send(result);
-      })    
+    // Getting the contest collection list
+    app.get("/contest", async (req, res) => {
+      const result = await contestCollection.find().toArray();
+      res.send(result);
+    });
+    // get individual contest details based on query
+    app.get("/contest/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await contestCollection.findOne(query);
+      res.send(result);
+    });
     // Sending new contest to the database, add (verifyToken, verifyAdmin,) later
-        app.post('/contest',  async (req, res) => {
-          const item = req.body;
-          const result = await contestCollection.insertOne(item);
-          res.send(result);
-        });
+    app.post("/contest", async (req, res) => {
+      const item = req.body;
+      const result = await contestCollection.insertOne(item);
+      res.send(result);
+    });
     // Update contest items to database
-    app.patch('/contest/:id', async (req, res) => {
+    app.patch("/contest/:id", async (req, res) => {
       const item = req.body;
       const id = req.params.id;
-      const filter = { _id: new ObjectId(id) }
+      const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
           name: item.name,
           category: item.category,
-          fee:item.fee,
+          fee: item.fee,
           prize: item.prize,
           deadline: item.deadline,
-          details:item.details,
-          instruction:item.instruction,
-          image: item.image
-        }
-      }
+          details: item.details,
+          instruction: item.instruction,
+          image: item.image,
+        },
+      };
 
-      const result = await contestCollection.updateOne(filter, updatedDoc)
+      const result = await contestCollection.updateOne(filter, updatedDoc);
       res.send(result);
-    })
+    });
     // Delete contest Items, add (verifyToken, verifyAdmin,) later
-    app.delete('/contest/:id', async(req, res)=>{
+    app.delete("/contest/:id", async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) };
       const result = await contestCollection.deleteOne(query);
-      res.send(result) 
-    })
+      res.send(result);
+    });
 
     //-------------------------
 
